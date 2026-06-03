@@ -1,16 +1,26 @@
-﻿<template>
+<template>
   <div class="space-y-4 md:space-y-6 font-karbalaei">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
       <h1 class="text-xl md:text-2xl font-bold text-brand-900">إدارة المتسابقين</h1>
       <button @click="printA4Codes" class="w-full md:w-auto bg-indigo-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition duration-300 text-sm md:text-base">🖨️ طباعة البطاقات</button>
     </div>
 
-    <div class="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-brand-100 shadow-sm flex flex-col md:flex-row gap-3 md:gap-4 items-end transition hover:shadow-md duration-300">
-      <div class="flex-1 w-full">
-          <label class="block text-brand-600 text-xs font-bold mb-2">اسم المتسابق (اختياري)</label>
-          <input v-model="newParticipantName" type="text" placeholder="الاسم الثلاثي..." class="w-full bg-brand-50 rounded-xl border border-brand-100 px-3 md:px-4 py-2 md:py-3 outline-none focus:ring-2 focus:ring-brand-200 transition text-sm md:text-base">
+    <div class="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-brand-100 shadow-sm flex flex-col gap-4 transition hover:shadow-md duration-300">
+      <div class="flex flex-col md:flex-row gap-3 md:gap-4 items-end">
+        <div class="flex-1 w-full">
+            <label class="block text-brand-600 text-xs font-bold mb-2">اسم المتسابق (اختياري)</label>
+            <input v-model="newParticipantName" type="text" placeholder="الاسم الثلاثي..." class="w-full bg-brand-50 rounded-xl border border-brand-100 px-3 md:px-4 py-2 md:py-3 outline-none focus:ring-2 focus:ring-brand-200 transition text-sm md:text-base">
+        </div>
+        <button @click="addParticipant" :disabled="loading" class="w-full md:w-auto bg-brand-600 text-white font-bold px-6 md:px-8 py-2 md:py-3 rounded-xl hover:bg-brand-700 transition disabled:opacity-50 text-sm md:text-base">توليد وإضافة</button>
       </div>
-      <button @click="addParticipant" :disabled="loading" class="w-full md:w-auto bg-brand-600 text-white font-bold px-6 md:px-8 py-2 md:py-3 rounded-xl hover:bg-brand-700 transition disabled:opacity-50 text-sm md:text-base">توليد وإضافة</button>
+      <div class="border-t border-brand-100 pt-4 flex flex-col md:flex-row gap-3 md:gap-4">
+        <div class="flex-1">
+          <input v-model="searchName" type="text" placeholder="البحث بالاسم..." class="w-full bg-white rounded-xl border border-brand-100 px-3 md:px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 transition">
+        </div>
+        <div class="flex-1">
+          <input v-model="searchCode" type="text" placeholder="البحث بالكود (اليوزر)..." class="w-full bg-white rounded-xl border border-brand-100 px-3 md:px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200 transition">
+        </div>
+      </div>
     </div>
 
     <div class="bg-white rounded-2xl md:rounded-3xl border border-brand-100 shadow-sm overflow-hidden">
@@ -23,18 +33,33 @@
                     <th class="p-3 md:p-4 text-right">الكود (الدخول)</th>
                     <th class="p-3 md:p-4 text-right">الرمز السري</th>
                     <th class="p-3 md:p-4 text-right">النقاط</th>
+                    <th class="p-3 md:p-4 text-center">المسابقات</th>
                     <th class="p-3 md:p-4 text-center">إجراء</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-brand-50">
-                <tr v-for="p in participantsList" :key="p.id" class="hover:bg-brand-50/50 transition duration-200">
-                    <td class="p-3 md:p-4 font-bold">{{ p.name || '---' }}</td>
+                <tr v-for="p in filteredParticipants" :key="p.id" class="hover:bg-brand-50/50 transition duration-200">
+                    <td class="p-3 md:p-4 font-bold">
+                      <div v-if="editingId === p.id" class="flex gap-2">
+                        <input v-model="editName" class="w-full text-sm bg-white border border-brand-200 px-2 py-1 rounded" />
+                        <button @click="saveEdit(p.id)" class="text-emerald-600 hover:text-emerald-800 bg-emerald-50 px-2 py-1 rounded text-xs">حفظ</button>
+                        <button @click="editingId = null" class="text-slate-600 hover:text-slate-800 bg-slate-50 px-2 py-1 rounded text-xs">إلغاء</button>
+                      </div>
+                      <div v-else>{{ p.name || '---' }}</div>
+                    </td>
                     <td class="p-3 md:p-4"><span class="bg-brand-100 text-brand-800 px-2 md:px-3 py-1 rounded-lg font-mono font-bold shadow-sm">{{ p.code }}</span></td>
                     <td class="p-3 md:p-4"><span class="bg-emerald-100 text-emerald-800 px-2 md:px-3 py-1 rounded-lg font-mono font-bold shadow-sm">{{ p.secretCode }}</span></td>
                     <td class="p-3 md:p-4 font-bold text-brand-600">{{ p.totalScore }}</td>
+                    <td class="p-3 md:p-4 text-center font-bold text-slate-600">{{ p._count?.submissions || 0 }}</td>
                     <td class="p-3 md:p-4 text-center">
-                        <button @click="deleteParticipant(p.id)" class="text-red-400 hover:text-red-600 bg-red-50 px-2 md:px-3 py-1 rounded-lg transition duration-200 hover:shadow-sm text-xs md:text-sm">حذف</button>
+                        <div class="flex gap-2 justify-center">
+                          <button v-if="editingId !== p.id" @click="startEdit(p)" class="text-indigo-500 hover:text-indigo-700 bg-indigo-50 px-2 md:px-3 py-1 rounded-lg transition duration-200 text-xs md:text-sm">تعديل</button>
+                          <button @click="deleteParticipant(p.id)" class="text-red-400 hover:text-red-600 bg-red-50 px-2 md:px-3 py-1 rounded-lg transition duration-200 hover:shadow-sm text-xs md:text-sm">إزالة المشارك</button>
+                        </div>
                     </td>
+                </tr>
+                <tr v-if="filteredParticipants.length === 0">
+                    <td colspan="6" class="p-4 text-center text-slate-400 text-sm">لا يوجد متسابقين مطابقين للبحث</td>
                 </tr>
             </tbody>
           </table>
@@ -42,10 +67,17 @@
 
         <!-- Mobile cards -->
         <div class="sm:hidden p-4 space-y-3">
-          <div v-for="p in participantsList" :key="p.id" class="bg-brand-50/30 p-4 rounded-xl border border-brand-100 space-y-3">
+          <div v-for="p in filteredParticipants" :key="p.id" class="bg-brand-50/30 p-4 rounded-xl border border-brand-100 space-y-3">
             <div class="flex justify-between items-start gap-2">
               <span class="text-xs font-bold text-brand-500">الاسم</span>
-              <span class="font-bold text-brand-800 text-sm">{{ p.name || '---' }}</span>
+              <div v-if="editingId === p.id" class="flex flex-col gap-2 w-2/3">
+                <input v-model="editName" class="w-full text-xs bg-white border border-brand-200 px-2 py-1 rounded" />
+                <div class="flex gap-2">
+                  <button @click="saveEdit(p.id)" class="text-emerald-600 bg-emerald-50 px-2 py-1 rounded text-xs w-full">حفظ</button>
+                  <button @click="editingId = null" class="text-slate-600 bg-slate-50 px-2 py-1 rounded text-xs w-full">إلغاء</button>
+                </div>
+              </div>
+              <span v-else class="font-bold text-brand-800 text-sm">{{ p.name || '---' }}</span>
             </div>
             <div class="flex justify-between items-start gap-2">
               <span class="text-xs font-bold text-brand-500">الكود</span>
@@ -59,7 +91,17 @@
               <span class="text-xs font-bold text-brand-500">النقاط</span>
               <span class="font-bold text-brand-600">{{ p.totalScore }}</span>
             </div>
-            <button @click="deleteParticipant(p.id)" class="w-full text-red-400 hover:text-red-600 bg-red-50 px-3 py-2 rounded-lg transition duration-200 hover:shadow-sm text-xs font-bold mt-2">حذف</button>
+            <div class="flex justify-between items-start gap-2">
+              <span class="text-xs font-bold text-brand-500">المسابقات</span>
+              <span class="font-bold text-slate-600">{{ p._count?.submissions || 0 }}</span>
+            </div>
+            <div class="flex gap-2 mt-2">
+              <button v-if="editingId !== p.id" @click="startEdit(p)" class="w-full text-indigo-500 hover:text-indigo-700 bg-indigo-50 px-3 py-2 rounded-lg transition text-xs font-bold">تعديل</button>
+              <button @click="deleteParticipant(p.id)" class="w-full text-red-400 hover:text-red-600 bg-red-50 px-3 py-2 rounded-lg transition hover:shadow-sm text-xs font-bold">إزالة المشارك</button>
+            </div>
+          </div>
+          <div v-if="filteredParticipants.length === 0" class="text-center text-slate-400 text-sm py-4">
+            لا يوجد متسابقين مطابقين للبحث
           </div>
         </div>
     </div>
@@ -82,12 +124,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { fetchApi, showMessage } from '../../utils/api';
 
 const participantsList = ref([]);
 const newParticipantName = ref('');
 const loading = ref(false);
+
+const searchName = ref('');
+const searchCode = ref('');
+
+const editingId = ref(null);
+const editName = ref('');
+
+const filteredParticipants = computed(() => {
+  return participantsList.value.filter(p => {
+    const matchName = !searchName.value || (p.name && p.name.toLowerCase().includes(searchName.value.toLowerCase()));
+    const matchCode = !searchCode.value || (p.code && p.code.toLowerCase().includes(searchCode.value.toLowerCase()));
+    return matchName && matchCode;
+  });
+});
 
 const loadParticipants = async () => participantsList.value = await fetchApi('/participants');
 
@@ -104,10 +160,24 @@ const addParticipant = async () => {
 };
 
 const deleteParticipant = async (id) => {
-    if(confirm('تأكيد الحذف؟')) {
+    if(confirm('تأكيد إزالة المشارك؟')) {
         await fetchApi(`/participants/${id}`, 'DELETE');
         await loadParticipants();
     }
+};
+
+const startEdit = (p) => {
+  editingId.value = p.id;
+  editName.value = p.name || '';
+};
+
+const saveEdit = async (id) => {
+  try {
+    await fetchApi(`/participants/${id}`, 'PATCH', { name: editName.value });
+    editingId.value = null;
+    await loadParticipants();
+    showMessage('تم تعديل الاسم بنجاح', 'success');
+  } catch(e) {}
 };
 
 const printA4Codes = () => {

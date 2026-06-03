@@ -1,11 +1,32 @@
-﻿<template>
+<template>
   <div class="space-y-4 md:space-y-6 font-karbalaei" v-if="selectedQuizDetails">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 md:mb-6 pb-4 border-b border-brand-100">
       <div>
-          <h1 class="text-xl md:text-2xl font-bold text-brand-900 mb-2">{{ selectedQuizDetails.title }}</h1>
-          <p class="text-xs md:text-sm text-brand-600">رمز المسابقة: <span class="bg-brand-100 px-2 py-1 rounded-md font-mono font-bold text-xs md:text-sm">{{ selectedQuizDetails.quizCode }}</span> | المشاركات: {{ selectedQuizDetails.submissions.length }}</p>
+          <h1 class="text-xl md:text-2xl font-bold text-brand-900 mb-2">
+              {{ selectedQuizDetails.title }}
+              <span v-if="selectedQuizDetails.status === 'ENDED'" class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-lg mr-2 align-middle">منتهية</span>
+              <span v-else-if="selectedQuizDetails.status === 'PAUSED'" class="text-xs bg-amber-100 text-amber-600 px-2 py-1 rounded-lg mr-2 align-middle">متوقفة مؤقتا</span>
+              <span v-else class="text-xs bg-emerald-100 text-emerald-600 px-2 py-1 rounded-lg mr-2 align-middle">قيد العمل</span>
+          </h1>
+          <p class="text-xs md:text-sm text-brand-600">
+            رمز المسابقة: <span class="bg-brand-100 px-2 py-1 rounded-md font-mono font-bold text-xs md:text-sm">{{ selectedQuizDetails.quizCode }}</span> | المشاركات: {{ selectedQuizDetails.submissions.length }}<br/>
+            تاريخ الإنشاء: <span class="font-bold">{{ new Date(selectedQuizDetails.createdAt).toLocaleDateString() }}</span>
+            <span v-if="selectedQuizDetails.status === 'ENDED'"> | تاريخ الانتهاء: <span class="font-bold">{{ new Date(selectedQuizDetails.endedAt).toLocaleDateString() }}</span></span>
+          </p>
       </div>
-      <button @click="router.push('/admin/quizzes')" class="w-full md:w-auto bg-white text-brand-600 border border-brand-200 px-4 md:px-6 py-2 rounded-xl font-bold hover:bg-brand-50 transition text-sm md:text-base">العودة</button>
+      <div class="flex flex-wrap gap-2 w-full md:w-auto">
+          <template v-if="selectedQuizDetails.status !== 'ENDED'">
+              <button @click="toggleQuizStatus" :class="['px-3 md:px-4 py-2 rounded-xl font-bold transition text-sm md:text-base', selectedQuizDetails.status === 'ACTIVE' ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200']">
+                  {{ selectedQuizDetails.status === 'ACTIVE' ? 'إيقاف مؤقت' : 'بدء المسابقة' }}
+              </button>
+              <button @click="endQuizAction" class="bg-red-100 text-red-600 border border-red-200 px-3 md:px-4 py-2 rounded-xl font-bold hover:bg-red-200 transition text-sm md:text-base">إنهاء المسابقة</button>
+          </template>
+          <template v-else>
+              <button @click="exportQuestionsToCSV" class="bg-indigo-100 text-indigo-600 px-3 py-2 rounded-xl font-bold hover:bg-indigo-200 transition text-sm">سحب الأسئلة</button>
+              <button @click="exportWinnersToCSV" class="bg-emerald-100 text-emerald-600 px-3 py-2 rounded-xl font-bold hover:bg-emerald-200 transition text-sm">سحب النتائج</button>
+          </template>
+          <button @click="router.push('/admin/quizzes')" class="bg-white text-brand-600 border border-brand-200 px-4 md:px-6 py-2 rounded-xl font-bold hover:bg-brand-50 transition text-sm md:text-base">العودة</button>
+      </div>
     </div>
     
     <!-- Podium for this quiz -->
@@ -152,6 +173,56 @@ const getSubmissionAnswer = (sub, qIdx) => {
         const parsedArray = JSON.parse(sub.answers || "[]");
         return parsedArray[qIdx];
     } catch { return ""; }
+};
+
+const toggleQuizStatus = async () => {
+    try {
+        await fetchApi(`/quizzes/${selectedQuizDetails.value.id}/toggle-status`, 'PATCH');
+        await loadQuizDetails();
+    } catch (e) {}
+};
+
+const endQuizAction = async () => {
+    if(confirm('تحذير: عند إنهاء المسابقة لا يمكن إعادة تفعيلها أبداً وسيتم إبطال رمز المسابقة. تجنبا للتلاعب لاحقاً بالمسابقات وأوقات إنهائها. هل أنت متأكد؟')) {
+        try {
+            await fetchApi(`/quizzes/${selectedQuizDetails.value.id}/end`, 'PATCH');
+            await loadQuizDetails();
+        } catch (e) {}
+    }
+};
+
+const exportQuestionsToCSV = () => {
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+    csvContent += "رقم,السؤال,الإجابة الصحيحة\n";
+    selectedQuizDetails.value.questions.forEach((q, idx) => {
+        const text = q.text.replace(/"/g, '""');
+        const answer = q.correctAnswer?.replace(/"/g, '""') || '';
+        csvContent += `${idx + 1},"${text}","${answer}"\n`;
+    });
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `اسئلة_${selectedQuizDetails.value.title}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+const exportWinnersToCSV = () => {
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+    csvContent += "التسلسل,اسم المتسابق,كود الدخول,النقاط\n";
+    selectedQuizDetails.value.submissions.forEach((sub, idx) => {
+        const name = (sub.participant?.name || 'غير محدد').replace(/"/g, '""');
+        const code = sub.participant?.code || '';
+        csvContent += `${idx + 1},"${name}","${code}",${sub.score}\n`;
+    });
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `فائزين_${selectedQuizDetails.value.title}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 };
 
 onMounted(loadQuizDetails);
