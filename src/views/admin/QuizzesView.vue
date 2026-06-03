@@ -24,7 +24,7 @@
                   المسابقة منتهية
               </div>
               <button v-else @click="toggleQuizStatus(quiz.id)" :class="['w-full font-bold py-2 rounded-xl transition duration-300 text-sm', quiz.status === 'ACTIVE' ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200']">
-                  {{ quiz.status === 'ACTIVE' ? 'قيد العمل (تفعيل)' : 'متوقفة مؤقتا (إيقاف)' }}
+                  {{ quiz.status === 'ACTIVE' ? '!قيد العمل (إيقاف)' : 'متوقفة مؤقتا (تفعيل)' }}
               </button>
             </div>
       </div>
