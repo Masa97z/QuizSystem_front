@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-4 md:space-y-6 font-karbalaei">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
       <h1 class="text-xl md:text-2xl font-bold text-brand-900">المسابقات المتاحة</h1>
@@ -24,7 +24,7 @@
                   المسابقة منتهية
               </div>
               <button v-else @click="toggleQuizStatus(quiz.id)" :class="['w-full font-bold py-2 rounded-xl transition duration-300 text-sm', quiz.status === 'ACTIVE' ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200']">
-                  {{ quiz.status === 'ACTIVE' ? 'متوقفة مؤقتا (إيقاف)' : 'قيد العمل (تفعيل)' }}
+                  {{ quiz.status === 'ACTIVE' ? 'قيد العمل (تفعيل)' : 'متوقفة مؤقتا (إيقاف)' }}
               </button>
             </div>
       </div>
