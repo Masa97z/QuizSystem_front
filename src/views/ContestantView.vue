@@ -35,7 +35,7 @@
         </button>
       </div>
 
-      <div v-else class="p-4 md:p-8 bg-brand-50/30 flex-1 flex flex-col">
+      <div v-else class="p-4 md:p-8 flex flex-col h-full justify-center">
         <div class="mb-4 md:mb-6 space-y-2 md:space-y-0">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
             <span class="text-brand-800 font-bold text-xs md:text-sm">مسابقة: {{ quizState.activeQuiz.title }}</span>
@@ -58,12 +58,12 @@
           
           <div v-if="currentQuestion?.type === 'multiple'" class="space-y-2 md:space-y-3">
             <button v-for="(option, idx) in parsedOptions(currentQuestion.options)" :key="idx" @click="quizState.answers[quizState.currentStep] = option"
-                :class="['w-full p-3 md:p-4 rounded-2xl border-2 text-right transition-all duration-200 font-medium hover:shadow-md text-xs md:text-sm', quizState.answers[quizState.currentStep] === option ? 'border-brand-500 bg-brand-100 text-brand-800 shadow-md transform scale-[1.02]' : 'border-white bg-white text-brand-600 hover:border-brand-200']">
+                :class="['w-full  p-3 md:p-4 rounded-2xl border-2 text-right transition-all duration-200 font-medium hover:shadow-md text-xs md:text-sm', quizState.answers[quizState.currentStep] === option ? 'border-brand-500 bg-brand-200 text-brand-800 shadow-md transform scale-[1.02]' : 'border-white bg-brand-100 text-brand-600 hover:border-brand-200']">
                 {{ option }}
             </button>
           </div>
           <div v-else>
-            <textarea v-model="quizState.answers[quizState.currentStep]" rows="3" placeholder="اكتب إجابتك هنا..." class="w-full bg-white rounded-2xl border-2 border-brand-100 p-3 md:p-4 focus:ring-2 focus:ring-brand-400 focus:border-transparent outline-none transition duration-300 hover:shadow-sm text-xs md:text-sm"></textarea>
+            <textarea v-model="quizState.answers[quizState.currentStep]" rows="3" placeholder="اكتب إجابتك هنا..." class="w-full bg-gradient-to-r rounded-2xl border-2 border-brand-100 p-3 md:p-4 focus:ring-2 focus:ring-brand-400 focus:border-transparent outline-none transition duration-300 hover:shadow-sm text-xs md:text-sm"></textarea>
           </div>
         </div>
 
