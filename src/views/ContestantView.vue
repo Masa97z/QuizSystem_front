@@ -113,7 +113,7 @@ const parsedOptions = (optionsString) => {
 };
 
 const handleLogin = async () => {
-    if (loginForm.code === 'admin'&& loginForm.secret === '123') {
+    if (loginForm.code === 'admin'&& loginForm.secret === 'B@17*Aa@') {
         showMessage('تم تسجيل الدخول كمدير', 'success');
         router.push('/admin/dashboard');
         return;
